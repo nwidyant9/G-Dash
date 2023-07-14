@@ -30,8 +30,13 @@ app.layout = html.Div([
 
 def update_graph(value):
   dff = df[df.Mesin==value]
-  fig = px.line(dff, x='Bulan', y='BD_percent', markers=True)
-  fig1 = px.line(dff, x='Bulan', y='BD_percent')
+  fig = px.line(dff, x='Bulan', y=['BD_percent', 'Target_percent'], markers=True)
+  fig.update_layout(
+    yaxis_title='Persentase (%)',
+    xaxis_title='Bulan'
+  )
+  fig.update_traces(name='Break Down %', selector=dict(name='BD_percent'))
+  fig.update_traces(name='Target %', selector=dict(name='Target_percent'))
   return fig
 
 if __name__ == '__main__':
