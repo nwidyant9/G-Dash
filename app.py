@@ -9,13 +9,12 @@ import dash_bootstrap_components as dbc
 data_mme1_2023 = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/dummy.csv'
 mme1_2023 = pd.read_csv(data_mme1_2023)
 
-# Preprocessing Data
+# Preprocessing Data MME 1
 mme1_2023 = mme1_2023.dropna(subset=['Mesin'])
 mme1_2023[['Load_time', 'Freq', 'Menit']] = mme1_2023[['Load_time', 'Freq', 'Menit']].fillna(0)
 mme1_2023['BD_percent'] = round((mme1_2023['Menit'] / mme1_2023['Load_time']) * 100, 2)
 mme1_2023['BD_percent'] = mme1_2023['BD_percent'].fillna(0)
 mme1_2023['Target_percent'] = round(mme1_2023['Target'] * 100, 2)
-
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
@@ -55,12 +54,12 @@ linreg_layout = dbc.Container(
     [
         dbc.Row(
             dbc.Col(
-                html.H1("New Page", className="mt-3 mb-4"),
+                html.H1("Linear Regression", className="mt-3 mb-4"),
             )
         ),
         dbc.Row(
             dbc.Col(
-                html.P("This is the content of the new page."),
+                html.P("This is the content of the Linear Regression."),
             )
         ),
     ],
