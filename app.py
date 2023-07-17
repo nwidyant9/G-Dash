@@ -16,25 +16,14 @@ mme1_2023['BD_percent'] = round((mme1_2023['Menit'] / mme1_2023['Load_time']) * 
 mme1_2023['BD_percent'] = mme1_2023['BD_percent'].fillna(0)
 mme1_2023['Target_percent'] = round(mme1_2023['Target'] * 100, 2)
 
-# Dash App
-app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+
+app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
 machine_options = [{'label': mesin, 'value': mesin} for mesin in mme1_2023['Mesin'].unique()]
 
-app.layout = dbc.Container(
-    fluid=True,
-    children=[
-        dbc.NavbarSimple(
-            children=[
-                dbc.NavItem(dbc.NavLink("Linear Regression (BETA)", href="#")),
-                dbc.NavItem(dbc.NavLink("Link 2", href="#")),
-            ],
-            brand="Dashboard",
-            brand_href="#",
-            color="primary",
-            dark=True,
-        ),
-
+# Define the layouts
+another_layout = linreg_layout = dbc.Container(
+    [
         html.H1(children='Dashboard MME 1 2023', className='mt-3 mb-4'),
 
         dbc.Row([
@@ -58,16 +47,63 @@ app.layout = dbc.Container(
                 dcc.Graph(id='bar-plot'),
                 width=6
             )
-        ], className='mb-5'),
+        ], className="mb-5"),
+    ],
+)
+
+linreg_layout = dbc.Container(
+    [
+        dbc.Row(
+            dbc.Col(
+                html.H1("New Page", className="mt-3 mb-4"),
+            )
+        ),
+        dbc.Row(
+            dbc.Col(
+                html.P("This is the content of the new page."),
+            )
+        ),
+    ],
+    className="mt-4"
+)
+
+app.layout = dbc.Container(
+    fluid=True,
+    children=[
+        dcc.Location(id='url', refresh=False),
+        dbc.NavbarSimple(
+            children=[
+                dbc.NavItem(dbc.NavLink("Dashboard", href="/", active="exact")),
+                dbc.NavItem(dbc.NavLink("Linear Regression (BETA)", href="/linreg", active="exact")),
+                dbc.NavItem(dbc.NavLink("Another Page", href="/another-page", active="exact")),
+            ],
+            brand="Dashboard",
+            brand_href="/",
+            color="primary",
+            dark=True,
+        ),
+        html.Div(id='page-content')
     ]
 )
 
-@callback(
+@app.callback(
+        Output('page-content', 'children'),
+          [Input('url', 'pathname')]
+)
+
+def display_page(pathname):
+    if pathname == '/':
+        return html.H1(children='Dashboard', className='mt-3 mb-4')
+    elif pathname == '/linreg':
+        return linreg_layout
+    elif pathname == '/another-page':
+        return another_layout
+    
+@app.callback(
     Output('line-plot', 'figure'),
     Output('bar-plot', 'figure'),
     Input('machine-dropdown', 'value')
 )
-
 def update_graph(value):
     dff = mme1_2023[mme1_2023.Mesin == value]
 
@@ -92,4 +128,4 @@ def update_plots(value):
     return line_fig, bar_fig
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run_server(debug=True)
