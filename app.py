@@ -74,17 +74,8 @@ app.layout = dbc.Container(
         dcc.Location(id='url', refresh=False),
         dbc.NavbarSimple(
             children=[
-                html.A(
-                    dbc.Row(
-                        [
-                            dbc.Col(html.Img(src=my_logo, height="30px")),
-                        ],
-                        align="center",
-                    ), href="/"
-                ),
                 dbc.NavItem(dbc.NavLink("Dashboard", href="/", active="exact")),
                 dbc.NavItem(dbc.NavLink("Linear Regression (BETA)", href="/linreg", active="exact")),
-                #dbc.NavItem(dbc.NavLink("Another Page", href="/another-page", active="exact")),
                 dbc.DropdownMenu(
                     [dbc.DropdownMenuItem(dbc.NavLink("MME1", href="/another-page", active="exact", style={'color': 'blue'})),
                      dbc.DropdownMenuItem(dbc.NavLink("MME2", href="/another-page", active="exact", style={'color': 'blue'})),
