@@ -5,6 +5,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
 
+my_logo = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/Pictures/gdash.png'
+
 # Load Data
 data_mme1_2023 = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/dummy.csv'
 mme1_2023 = pd.read_csv(data_mme1_2023)
@@ -21,7 +23,7 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callb
 machine_options = [{'label': mesin, 'value': mesin} for mesin in mme1_2023['Mesin'].unique()]
 
 # Define the layouts
-another_layout = linreg_layout = dbc.Container(
+mme1_layout = linreg_layout = dbc.Container(
     [
         html.H1(children='Dashboard MME 1 2023', className='mt-3 mb-4'),
 
@@ -72,11 +74,26 @@ app.layout = dbc.Container(
         dcc.Location(id='url', refresh=False),
         dbc.NavbarSimple(
             children=[
+                html.A(
+                    dbc.Row(
+                        [
+                            dbc.Col(html.Img(src=my_logo, height="30px")),
+                        ],
+                        align="center",
+                    ), href="/"
+                ),
                 dbc.NavItem(dbc.NavLink("Dashboard", href="/", active="exact")),
                 dbc.NavItem(dbc.NavLink("Linear Regression (BETA)", href="/linreg", active="exact")),
-                dbc.NavItem(dbc.NavLink("Another Page", href="/another-page", active="exact")),
+                #dbc.NavItem(dbc.NavLink("Another Page", href="/another-page", active="exact")),
+                dbc.DropdownMenu(
+                    [dbc.DropdownMenuItem(dbc.NavLink("MME1", href="/another-page", active="exact", style={'color': 'blue'})),
+                     dbc.DropdownMenuItem(dbc.NavLink("MME2", href="/another-page", active="exact", style={'color': 'blue'})),
+                    ],
+                    label="Visualisasi",
+                    nav=True,
+                ),
             ],
-            brand="Dashboard",
+            brand="G-DASH",
             brand_href="/",
             color="primary",
             dark=True,
@@ -96,7 +113,7 @@ def display_page(pathname):
     elif pathname == '/linreg':
         return linreg_layout
     elif pathname == '/another-page':
-        return another_layout
+        return mme1_layout
     
 @app.callback(
     Output('line-plot', 'figure'),
