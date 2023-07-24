@@ -84,7 +84,6 @@ app.layout = dbc.Container(
                 ),
                 dbc.NavItem(dbc.NavLink("Dashboard", href="/", active="exact")),
                 dbc.NavItem(dbc.NavLink("Linear Regression (BETA)", href="/linreg", active="exact")),
-                #dbc.NavItem(dbc.NavLink("Another Page", href="/another-page", active="exact")),
                 dbc.DropdownMenu(
                     [dbc.DropdownMenuItem(dbc.NavLink("MME1", href="/another-page", active="exact", style={'color': 'blue'})),
                      dbc.DropdownMenuItem(dbc.NavLink("MME2", href="/another-page", active="exact", style={'color': 'blue'})),
