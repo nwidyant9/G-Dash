@@ -1,5 +1,6 @@
 from dash import Dash, html, dcc, callback, Output, Input
 import pandas as pd
+import numpy as np
 import os
 import plotly.express as px
 import plotly.graph_objects as go
@@ -11,13 +12,21 @@ my_logo = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/Pictures/g
 data_mme1_2023 = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/dummy.csv'
 mme1_2023 = pd.read_csv(data_mme1_2023)
 
-# Preprocessing Data MME 1
+# Preprocessing Data MME1
 mme1_2023 = mme1_2023.dropna(subset=['Mesin'])
+mme1_2023.loc[mme1_2023['Mesin'] == 'DGM 2 (KORAN)', 'Target'] = mme1_2023.loc[mme1_2023['Mesin'] == 'DGM 2 (KORAN)', 'Target'].fillna(0)
 mme1_2023[['Load_time', 'Freq', 'Menit']] = mme1_2023[['Load_time', 'Freq', 'Menit']].fillna(0)
 mme1_2023['BD_percent'] = round((mme1_2023['Menit'] / mme1_2023['Load_time']) * 100, 2)
 mme1_2023['BD_percent'] = mme1_2023['BD_percent'].fillna(0)
+mme1_2023.reset_index(drop=True, inplace=True)
+modes_by_mesin = mme1_2023.groupby('Mesin')['Target'].transform(lambda x: x.mode().iloc[0])
+mme1_2023['Target'] = mme1_2023['Target'].fillna(modes_by_mesin)
 mme1_2023['Target_percent'] = round(mme1_2023['Target'] * 100, 2)
+mme1_2023['Status'] = np.where(mme1_2023['BD_percent'] <= mme1_2023['Target_percent'], 1, 0)
 
+# Preprocessing Data MME2
+
+# Define the app
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
 machine_options = [{'label': mesin, 'value': mesin} for mesin in mme1_2023['Mesin'].unique()]
@@ -42,11 +51,11 @@ mme1_layout = linreg_layout = dbc.Container(
         dbc.Row([
             dbc.Col(
                 dcc.Graph(id='line-plot'),
-                width=6
+                width=6,
             ),
             dbc.Col(
                 dcc.Graph(id='bar-plot'),
-                width=6
+                width=6,
             )
         ], className="mb-5"),
     ],
