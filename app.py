@@ -17,6 +17,9 @@ my_logo = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/Pictures/g
 data_mme1_2023 = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/dummy.csv'
 mme1_2023 = pd.read_csv(data_mme1_2023)
 
+# Dummy Global variable
+my_data = None
+
 # Preprocessing Data MME1
 mme1_2023 = mme1_2023.dropna(subset=['Mesin'])
 mme1_2023.loc[mme1_2023['Mesin'] == 'DGM 2 (KORAN)', 'Target'] = mme1_2023.loc[mme1_2023['Mesin'] == 'DGM 2 (KORAN)', 'Target'].fillna(0)
@@ -27,7 +30,7 @@ mme1_2023.reset_index(drop=True, inplace=True)
 modes_by_mesin = mme1_2023.groupby('Mesin')['Target'].transform(lambda x: x.mode().iloc[0])
 mme1_2023['Target'] = mme1_2023['Target'].fillna(modes_by_mesin)
 mme1_2023['Target_percent'] = round(mme1_2023['Target'] * 100, 2)
-mme1_2023['Status'] = np.where(mme1_2023['BD_percent'] <= mme1_2023['Target_percent'], 1, 0)
+mme1_2023['Status'] = np.where(mme1_2023['BD_percent'] <= mme1_2023['Target_percent'], 'OK', 'Not OK')
 
 # Preprocessing Data MME2
 
@@ -42,18 +45,18 @@ dashboard_layout = html.Div([
     dcc.Upload(
         id='upload-data',
         children=html.Div([
-            'Drag and Drop or ',
-            html.A('Select Files')
+            'Drag and Drop CSV Files or ',
+            html.A('Select CSV Files', style={'color': 'blue'})
         ]),
         style={
-            'width': '99%',
+            'width': '100%',
             'height': '60px',
             'lineHeight': '60px',
             'borderWidth': '1px',
             'borderStyle': 'dashed',
             'borderRadius': '5px',
             'textAlign': 'center',
-            'margin': '10px'
+            'margin-top': '100px'
         },
         # Allow multiple files to be uploaded
         multiple=True
@@ -62,7 +65,7 @@ dashboard_layout = html.Div([
 ])
 
 # Display the MME1 layout
-mme1_layout = linreg_layout = dbc.Container(
+mme1_layout = dbc.Container(
     [
         html.H1(children='Dashboard MME 1 2023', className='mt-3 mb-4'),
 
@@ -88,7 +91,18 @@ mme1_layout = linreg_layout = dbc.Container(
                 width=6,
             )
         ], className="mb-5"),
-    ],
+
+        dbc.Row([
+            dbc.Col(
+                dcc.Graph(id='pie-chart'),
+                width=6,
+            ),
+        ], className="mb-5"),
+
+    ], style={
+        'margin-top': '100px',
+        'position': 'static',
+        },
 )
 
 # Display the Linear Regression layout
@@ -104,7 +118,10 @@ linreg_layout = dbc.Container(
                 html.P("This is the content of the Linear Regression."),
             )
         ),
-    ],
+    ], style={
+        'margin-top': '100px',
+        'position': 'static',
+        },
     className="mt-4"
 )
 
@@ -129,6 +146,7 @@ app.layout = dbc.Container(
             brand_href="/",
             color="primary",
             dark=True,
+            style={'position': 'fixed', 'top': '0', 'left': '0', 'width': '100%', 'z-index': '100'}
         ),
         html.Div(id='page-content')
     ]
@@ -152,6 +170,7 @@ def display_page(pathname):
 @app.callback(
     Output('line-plot', 'figure'),
     Output('bar-plot', 'figure'),
+    Output('pie-chart', 'figure'),
     Input('machine-dropdown', 'value')
 )
 def update_graph(value):
@@ -171,7 +190,19 @@ def update_graph(value):
     line_fig.update_traces(name='Break Down %', selector=dict(name='BD_percent'))
     line_fig.update_traces(name='Target %', selector=dict(name='Target_percent'))
 
-    return line_fig, bar_fig
+    status_counts = dff['Status'].value_counts()
+    status_percentages = (status_counts / status_counts.sum()) * 100
+    pie_fig = px.pie(status_percentages,
+                     values=status_percentages,
+                     names=status_percentages.index,
+                     title='Persentase Status Break Down setiap Mesin',
+                     labels={'label': 'Status'},
+                     hole=.3,
+                     color_discrete_sequence=['blue', 'red'],
+                     category_orders={'Status': ['OK', 'Not OK']}
+                    )
+
+    return line_fig, bar_fig, pie_fig
 
 def update_plots(value):
     line_fig, bar_fig = update_graph(value)
@@ -192,7 +223,7 @@ def parse_contents(contents, filename, date):
     except Exception as e:
         print(e)
         return html.Div([
-            'There was an error processing this file.'
+            'Invalid file format. Please upload a CSV file'
         ])
 
     return html.Div([
@@ -218,7 +249,7 @@ def parse_contents(contents, filename, date):
               Input('upload-data', 'contents'),
               State('upload-data', 'filename'),
               State('upload-data', 'last_modified'))
-def update_output(list_of_contents, list_of_names, list_of_dates):
+def update_file(list_of_contents, list_of_names, list_of_dates):
     if list_of_contents is not None:
         children = [
             parse_contents(c, n, d) for c, n, d in
