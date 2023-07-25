@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
 
 # Add logo
-my_logo = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/Pictures/gdash.png'
+my_logo = ''
 
 # Load Data
 data_mme1_2023 = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/dummy.csv'
