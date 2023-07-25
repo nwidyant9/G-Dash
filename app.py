@@ -40,6 +40,28 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callb
 # Make option for dropdown
 machine_options = [{'label': mesin, 'value': mesin} for mesin in mme1_2023['Mesin'].unique()]
 
+# Define home_layout
+home_layout = dbc.Container(
+    [
+        dbc.Row(
+            dbc.Col(
+                html.H1("Welcome to G-DASH", className="mt-3 mb-4"),
+            )
+        ),
+        dbc.Row(
+            dbc.Col(
+                html.P("Get started by uploading your CSV files and exploring the dashboard."),
+            )
+        ),
+        dbc.Row(
+            dbc.Col(
+                dbc.Button("Get Started", id='get-started-button', n_clicks=0, color='primary', className='mt-3'),
+                width='auto'
+            )
+        ),
+    ]
+)
+
 # Define dashboard layout
 dashboard_layout = html.Div([
     dcc.Upload(
@@ -119,7 +141,7 @@ linreg_layout = dbc.Container(
             )
         ),
     ], style={
-        'margin-top': '100px',
+        'margin-top': '150px',
         'position': 'static',
         },
     className="mt-4"
@@ -142,7 +164,7 @@ app.layout = dbc.Container(
                     nav=True,
                 ),
             ],
-            brand="G-DASH",
+            brand=html.Img(src=my_logo, height="30px"),
             brand_href="/",
             color="primary",
             dark=True,
@@ -159,13 +181,22 @@ app.layout = dbc.Container(
 
 def display_page(pathname):
     if pathname == '/':
-        return html.H1(children='Dashboard', className='mt-3 mb-4')
+        return home_layout
     elif pathname == '/dashboard':
         return dashboard_layout
     elif pathname == '/linreg':
         return linreg_layout
     elif pathname == '/mme1-2023':
         return mme1_layout
+    
+@app.callback(
+    Output('url', 'pathname'),
+    Input('get-started-button', 'n_clicks')
+)
+def navigate_to_dashboard(n_clicks):
+    if n_clicks is not None and n_clicks > 0:
+        return '/dashboard'
+    return '/'
     
 @app.callback(
     Output('line-plot', 'figure'),
