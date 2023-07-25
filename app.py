@@ -12,6 +12,7 @@ import dash_bootstrap_components as dbc
 
 # Add logo
 my_logo = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/Pictures/g-dash-high-resolution-logo-white-on-transparent-background.png'
+my_logo_image = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/Pictures/g-dash-high-resolution-logo-color-on-transparent-background.png'
 
 # Load Data
 data_mme1_2023 = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/dummy.csv'
@@ -43,6 +44,12 @@ machine_options = [{'label': mesin, 'value': mesin} for mesin in mme1_2023['Mesi
 # Define home_layout
 home_layout = dbc.Container(
     [
+        dbc.Row(
+            dbc.Col(
+                html.Img(src=my_logo_image, style={'width': '100%', 'height': 'auto', 'margin-top': '100px', 'align': 'center'}),
+                width={"size": 6, "offset": 3}
+            )
+        ),
         dbc.Row(
             dbc.Col(
                 html.H1("Welcome to G-DASH", className="mt-3 mb-4"),
@@ -140,10 +147,7 @@ linreg_layout = dbc.Container(
                 html.P("This is the content of the Linear Regression."),
             )
         ),
-    ], style={
-        'margin-top': '150px',
-        'position': 'static',
-        },
+    ],
     className="mt-4"
 )
 
@@ -208,7 +212,7 @@ def update_graph(value):
     dff = mme1_2023[mme1_2023.Mesin == value]
 
     line_fig = px.line(dff, x='Bulan', y=['BD_percent', 'Target_percent'], markers=True, title='Perbandingan Persentase Break Down dan Target')
-    line_fig.update_layout(height=300)
+    line_fig.update_layout()
 
     bar_fig = px.bar(dff, x='Bulan', y='Freq', title='Frequensi Break Down per Bulan')
     bar_fig.add_trace(go.Scatter(x=dff['Bulan'], y=dff['Freq'], mode='lines+markers', name='Freq'))
