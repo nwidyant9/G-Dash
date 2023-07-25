@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
 
 # Add logo
-my_logo = ''
+my_logo = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/Pictures/g-dash-high-resolution-logo-white-on-transparent-background.png'
 
 # Load Data
 data_mme1_2023 = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/dummy.csv'
@@ -164,7 +164,7 @@ app.layout = dbc.Container(
                     nav=True,
                 ),
             ],
-            brand=html.Img(src=my_logo, height="30px"),
+            brand=html.Img(src=my_logo, height='55px'),
             brand_href="/",
             color="primary",
             dark=True,
