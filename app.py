@@ -1,7 +1,11 @@
-from dash import Dash, html, dcc, callback, Output, Input
+from dash import Dash, html, dcc, callback, Output, Input, State
+from dash import dash_table
 import pandas as pd
 import numpy as np
 import os
+import io
+import base64
+import datetime
 import plotly.express as px
 import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
@@ -86,7 +90,7 @@ app.layout = dbc.Container(
                 dbc.NavItem(dbc.NavLink("Dashboard", href="/", active="exact")),
                 dbc.NavItem(dbc.NavLink("Linear Regression (BETA)", href="/linreg", active="exact")),
                 dbc.DropdownMenu(
-                    [dbc.DropdownMenuItem(dbc.NavLink("MME1", href="/another-page", active="exact", style={'color': 'blue'})),
+                    [dbc.DropdownMenuItem(dbc.NavLink("MME1", href="/mme1-2023", active="exact", style={'color': 'blue'})),
                      dbc.DropdownMenuItem(dbc.NavLink("MME2", href="/another-page", active="exact", style={'color': 'blue'})),
                     ],
                     label="Visualisasi",
@@ -112,7 +116,7 @@ def display_page(pathname):
         return html.H1(children='Dashboard', className='mt-3 mb-4')
     elif pathname == '/linreg':
         return linreg_layout
-    elif pathname == '/another-page':
+    elif pathname == '/mme1-2023':
         return mme1_layout
     
 @app.callback(
