@@ -2,6 +2,7 @@ from dash import Dash, html, dcc, callback, Output, Input, State
 from dash import dash_table
 import pandas as pd
 import numpy as np
+import dash
 import os
 import io
 import base64
@@ -19,7 +20,10 @@ data_mme1_2023 = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/dum
 mme1_2023 = pd.read_csv(data_mme1_2023)
 
 # Dummy Global variable
-my_data = None
+global df
+global df_preprocessed
+df = pd.DataFrame()  # Initialize an empty DataFrame
+df_preprocessed = pd.DataFrame()
 
 # Preprocessing Data MME1
 mme1_2023 = mme1_2023.dropna(subset=['Mesin'])
@@ -90,7 +94,14 @@ dashboard_layout = html.Div([
         # Allow multiple files to be uploaded
         multiple=True
     ),
+    dbc.Button('View File', id='view-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
+    dbc.Button('Preprocessing', id='preprocess-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
+    dbc.Button('Plot', id='plot-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
     html.Div(id='output-data-upload'),
+    html.Div(id='upload-message', style={'margin': '10px'}),
+    html.H3('Preprocessed Data'),
+    dash_table.DataTable(id='preprocessed-table', columns=[], data=[], page_size=10),
+    dcc.Graph(id='scatter-plot')
 ])
 
 # Display the MME1 layout
@@ -244,6 +255,7 @@ def update_plots(value):
     return line_fig, bar_fig
 
 def parse_contents(contents, filename, date):
+    global df   # Declare df as a global variable outside the try block
     content_type, content_string = contents.split(',')
 
     decoded = base64.b64decode(content_string)
@@ -267,7 +279,8 @@ def parse_contents(contents, filename, date):
 
         dash_table.DataTable(
             df.to_dict('records'),
-            [{'name': i, 'id': i} for i in df.columns]
+            [{'name': i, 'id': i} for i in df.columns],
+            page_size=10
         ),
 
         html.Hr(),  # horizontal line
@@ -280,17 +293,71 @@ def parse_contents(contents, filename, date):
         })
     ])
 
-@callback(Output('output-data-upload', 'children'),
-              Input('upload-data', 'contents'),
-              State('upload-data', 'filename'),
-              State('upload-data', 'last_modified'))
-def update_file(list_of_contents, list_of_names, list_of_dates):
-    if list_of_contents is not None:
+@callback([Output('output-data-upload', 'children'),
+           Output('upload-message', 'children')],
+           [Input('view-button', 'n_clicks')],
+           [State('upload-data', 'contents'),
+            State('upload-data', 'filename'),
+            State('upload-data', 'last_modified')])
+def view_file(n_clicks, list_of_contents, list_of_names, list_of_dates):
+    global df   # Declare df as a global variable in the callback
+    if n_clicks > 0 and list_of_contents is not None:
         children = [
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
-        return children
+        message = "DataFrame generated successfully!"
+        return children, message
+    else:
+        return dash.no_update
+    
+@callback(Output('scatter-plot', 'figure'),
+          Input('plot-button', 'n_clicks'))
+def generate_scatter_plot(n_clicks):
+    global df  # Use the global df variable to create the scatter plot
+    if n_clicks > 0 and not df.empty:
+        fig = px.scatter(df, x='x', y='y', title='Scatter Plot')
+        return fig
+    else:
+        return dash.no_update
+    
+def preprocess_data():
+    global df  # Access the global df variable
 
+    if df.empty:
+        return "DataFrame is empty. Upload data first."
+
+    # Perform data preprocessing (scaling 'x' and 'y' columns to [0, 1])
+    df = df.dropna(subset=['Mesin'])
+    df.loc[df['Mesin'] == 'DGM 2 (KORAN)', 'Target'] = df.loc[df['Mesin'] == 'DGM 2 (KORAN)', 'Target'].fillna(0)
+    df[['Load_time', 'Freq', 'Menit']] = df[['Load_time', 'Freq', 'Menit']].fillna(0)
+    df['BD_percent'] = round((df['Menit'] / df['Load_time']) * 100, 2)
+    df['BD_percent'] = df['BD_percent'].fillna(0)
+    df.reset_index(drop=True, inplace=True)
+    modes_by_mesin = df.groupby('Mesin')['Target'].transform(lambda x: x.mode().iloc[0])
+    df['Target'] = df['Target'].fillna(modes_by_mesin)
+    df['Target_percent'] = round(df['Target'] * 100, 2)
+    df['Status'] = np.where(df['BD_percent'] <= df['Target_percent'], 'OK', 'Not OK')
+
+    # Assign the preprocessed data to a new global variable df_preprocessed
+    global df_preprocessed
+    df_preprocessed = df.copy()
+
+    return "Data preprocessed successfully!"
+
+@callback(Output('preprocessed-table', 'columns'),
+          Output('preprocessed-table', 'data'),
+          Input('preprocess-button', 'n_clicks'))
+def preprocess_callback(n_clicks):
+    if n_clicks > 0:
+        message = preprocess_data()
+        if df_preprocessed.empty:
+            return [], []
+        else:
+            columns = [{'name': i, 'id': i} for i in df_preprocessed.columns]
+            data = df_preprocessed.to_dict('records')
+            return columns, data
+    else:
+        return [], []
 
 if __name__ == '__main__':
     app.run_server(debug=True)
