@@ -145,6 +145,10 @@ mme1_layout = dbc.Container(
                 dcc.Graph(id='pie-chart'),
                 width=6,
             ),
+            dbc.Col(
+                dcc.Graph(id='freq-bar-plot'),
+                width=6,
+            )
         ], className="mb-5"),
 
         dbc.Row([
@@ -247,10 +251,14 @@ def navigate_to_dashboard(n_clicks):
     Output('line-plot', 'figure'),
     Output('bar-plot', 'figure'),
     Output('pie-chart', 'figure'),
+    Output('freq-bar-plot', 'figure'),
     Input('machine-dropdown', 'value'),
 )
 def update_graph(value):
     dff = mme1_2023[mme1_2023.Mesin == value]
+
+    status_counts = dff['Status'].value_counts()
+    status_percentages = (status_counts / status_counts.sum()) * 100
 
     line_fig = px.line(dff, x='Bulan', y=['BD_percent', 'Target_percent'], markers=True, title='Perbandingan Persentase Break Down dan Target')
     line_fig.update_layout()
@@ -258,31 +266,44 @@ def update_graph(value):
     bar_fig = px.bar(dff, x='Bulan', y='Freq', title='Frequensi Break Down per Bulan')
     bar_fig.add_trace(go.Scatter(x=dff['Bulan'], y=dff['Freq'], mode='lines+markers', name='Freq'))
 
+    color_map = {'OK': 'blue', 'Not OK': 'red'}
+    status_counts = status_counts.sort_index(ascending=False)
+
+    freq_bar_fig = px.bar(status_counts, x=status_counts.index,
+                      y=status_counts.values,
+                      title='Total Frequensi Status Break Down',
+                      color=status_counts.index,
+                      color_discrete_map=color_map
+                     )
+
     line_fig.update_layout(
        yaxis_title='Persentase (%)',
        xaxis_title='Bulan'
+    )
+
+    freq_bar_fig.update_layout(
+       yaxis_title='Frekuensi',
+       xaxis_title='Status'
     )
     
     line_fig.update_traces(name='Break Down %', selector=dict(name='BD_percent'))
     line_fig.update_traces(name='Target %', selector=dict(name='Target_percent'))
 
-    status_counts = dff['Status'].value_counts()
-    status_percentages = (status_counts / status_counts.sum()) * 100
     pie_fig = px.pie(status_percentages,
                      values=status_percentages,
                      names=status_percentages.index,
-                     title='Persentase Status Break Down setiap Mesin',
+                     title='Total Persentase Status Break Down',
                      labels={'label': 'Status'},
                      hole=.3,
                      color_discrete_sequence=['blue', 'red'],
                      category_orders={'Status': ['OK', 'Not OK']}
                     )
 
-    return line_fig, bar_fig, pie_fig
+    return line_fig, bar_fig, pie_fig, freq_bar_fig
 
 def update_plots(value):
-    line_fig, bar_fig = update_graph(value)
-    return line_fig, bar_fig
+    line_fig, bar_fig, freq_bar_fig = update_graph(value)
+    return line_fig, bar_fig, freq_bar_fig
 
 @app.callback(
     Output('new-bar-plot', 'figure'),
@@ -292,9 +313,9 @@ def update_plots(value):
 def new_update_graph(bulan_value):
     dfm = mme1_2023[mme1_2023.Bulan == bulan_value]
 
-    new_bar_fig = px.bar(dfm, x='Mesin', y='Freq', title='Frequensi Break Down per Bulan', color='Mesin', text='Freq')
+    new_bar_fig = px.bar(dfm, x='Mesin', y='Freq', title='Frequensi Break Down setiap Mesin', color='Mesin', text='Freq')
     new_bar_fig.update_traces(textposition='outside', cliponaxis=False)
-    percent_bar_fig = px.bar(dfm, x='Mesin', y='BD_percent', title='Persentase Break Down per Bulan', color='Mesin', text='BD_percent')
+    percent_bar_fig = px.bar(dfm, x='Mesin', y='BD_percent', title='Persentase Break Down setiap Mesin', color='Mesin', text='BD_percent')
     percent_bar_fig.update_traces(textposition='outside', cliponaxis=False)
 
     new_bar_fig.update_layout(
