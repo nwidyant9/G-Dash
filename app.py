@@ -11,7 +11,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
 
-# Add logo
+# Add logo and images
 my_logo = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/Pictures/g-dash-high-resolution-logo-white-on-transparent-background.png'
 my_logo_image = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/Pictures/g-dash-high-resolution-logo-color-on-transparent-background.png'
 
@@ -22,8 +22,12 @@ mme1_2023 = pd.read_csv(data_mme1_2023)
 # Dummy Global variable
 global df
 global df_preprocessed
+global mesin_options
+global values
 df = pd.DataFrame()  # Initialize an empty DataFrame
 df_preprocessed = pd.DataFrame()
+mesin_options = None
+values = None
 
 # Preprocessing Data MME1
 mme1_2023 = mme1_2023.dropna(subset=['Mesin'])
@@ -36,6 +40,7 @@ modes_by_mesin = mme1_2023.groupby('Mesin')['Target'].transform(lambda x: x.mode
 mme1_2023['Target'] = mme1_2023['Target'].fillna(modes_by_mesin)
 mme1_2023['Target_percent'] = round(mme1_2023['Target'] * 100, 2)
 mme1_2023['Status'] = np.where(mme1_2023['BD_percent'] <= mme1_2023['Target_percent'], 'OK', 'Not OK')
+Total = mme1_2023['Load_time'].sum()
 
 # Preprocessing Data MME2
 
@@ -74,35 +79,38 @@ home_layout = dbc.Container(
 )
 
 # Define dashboard layout
-dashboard_layout = html.Div([
-    dcc.Upload(
-        id='upload-data',
-        children=html.Div([
-            'Drag and Drop CSV Files or ',
-            html.A('Select CSV Files', style={'color': 'blue'})
-        ]),
-        style={
-            'width': '100%',
-            'height': '60px',
-            'lineHeight': '60px',
-            'borderWidth': '1px',
-            'borderStyle': 'dashed',
-            'borderRadius': '5px',
-            'textAlign': 'center',
-            'margin-top': '100px'
-        },
-        # Allow multiple files to be uploaded
-        multiple=True
-    ),
-    dbc.Button('View File', id='view-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
-    dbc.Button('Preprocessing', id='preprocess-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
-    dbc.Button('Plot', id='plot-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
-    html.Div(id='output-data-upload'),
-    html.Div(id='upload-message', style={'margin': '10px'}),
-    html.H3('Preprocessed Data'),
-    dash_table.DataTable(id='preprocessed-table', columns=[], data=[], page_size=10),
-    dcc.Graph(id='scatter-plot')
-])
+dashboard_layout = dbc.Container(
+    [
+        dcc.Upload(
+            id='upload-data',
+            children=html.Div([
+                'Drag and Drop CSV Files or ',
+                html.A('Select CSV Files', style={'color': 'blue'})
+            ]),
+            style={
+                'width': '100%',
+                'height': '60px',
+                'lineHeight': '60px',
+                'borderWidth': '1px',
+                'borderStyle': 'dashed',
+                'borderRadius': '5px',
+                'textAlign': 'center',
+                'margin-top': '100px'
+            },
+            # Allow multiple files to be uploaded
+            multiple=True
+        ),
+        dbc.Button('View File', id='view-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
+        dbc.Button('Preprocessing', id='preprocess-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
+        dbc.Button('Visualize', id='visualize-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
+        html.H3("Uploaded Data"),
+        html.Div(id='output-data-upload'),
+        html.Div(id='upload-message', style={'margin': '10px'}),
+        html.H3("Preprocessed Data"),
+        dash_table.DataTable(id='preprocessed-table', columns=[], data=[], page_size=10),
+        html.H3("Visualized Data"),
+    ]
+)
 
 # Display the MME1 layout
 mme1_layout = dbc.Container(
@@ -118,7 +126,7 @@ mme1_layout = dbc.Container(
                     className='mb-3'
                 ),
                 width=3
-            )
+            ),
         ]),
 
         dbc.Row([
@@ -138,6 +146,29 @@ mme1_layout = dbc.Container(
                 width=6,
             ),
         ], className="mb-5"),
+
+        dbc.Row([
+            dbc.Col(
+                dcc.Dropdown(
+                    id='bulan-dropdown',
+                    options=[{'label': bulan, 'value': bulan} for bulan in mme1_2023['Bulan'].unique()],
+                    value=mme1_2023['Bulan'].unique()[0],
+                    className='mb-3'
+                ),
+                width=3
+            )
+        ]),
+
+        dbc.Row([
+            dbc.Col(
+                dcc.Graph(id='new-bar-plot'),
+                width=6,
+            ),
+            dbc.Col(
+                dcc.Graph(id='percent-bar-plot'),
+                width=6,
+            ),
+        ], className="mb-5")
 
     ], style={
         'margin-top': '100px',
@@ -172,10 +203,10 @@ app.layout = dbc.Container(
                 dbc.NavItem(dbc.NavLink("Dashboard", href="/dashboard", active="exact")),
                 dbc.NavItem(dbc.NavLink("Linear Regression (BETA)", href="/linreg", active="exact")),
                 dbc.DropdownMenu(
-                    [dbc.DropdownMenuItem(dbc.NavLink("MME1", href="/mme1-2023", active="exact", style={'color': 'blue'})),
-                     dbc.DropdownMenuItem(dbc.NavLink("MME2", href="/another-page", active="exact", style={'color': 'blue'})),
+                    [
+                        dbc.DropdownMenuItem(dbc.NavLink("MME1", href="/mme1-2023", active="exact", style={'color': 'blue'})),
                     ],
-                    label="Visualisasi",
+                    label="Examples",
                     nav=True,
                 ),
             ],
@@ -193,7 +224,6 @@ app.layout = dbc.Container(
         Output('page-content', 'children'),
           [Input('url', 'pathname')]
 )
-
 def display_page(pathname):
     if pathname == '/':
         return home_layout
@@ -217,7 +247,7 @@ def navigate_to_dashboard(n_clicks):
     Output('line-plot', 'figure'),
     Output('bar-plot', 'figure'),
     Output('pie-chart', 'figure'),
-    Input('machine-dropdown', 'value')
+    Input('machine-dropdown', 'value'),
 )
 def update_graph(value):
     dff = mme1_2023[mme1_2023.Mesin == value]
@@ -253,6 +283,36 @@ def update_graph(value):
 def update_plots(value):
     line_fig, bar_fig = update_graph(value)
     return line_fig, bar_fig
+
+@app.callback(
+    Output('new-bar-plot', 'figure'),
+    Output('percent-bar-plot', 'figure'),
+    Input('bulan-dropdown', 'value')
+)
+def new_update_graph(bulan_value):
+    dfm = mme1_2023[mme1_2023.Bulan == bulan_value]
+
+    new_bar_fig = px.bar(dfm, x='Mesin', y='Freq', title='Frequensi Break Down per Bulan', color='Mesin', text='Freq')
+    new_bar_fig.update_traces(textposition='outside', cliponaxis=False)
+    percent_bar_fig = px.bar(dfm, x='Mesin', y='BD_percent', title='Persentase Break Down per Bulan', color='Mesin', text='BD_percent')
+    percent_bar_fig.update_traces(textposition='outside', cliponaxis=False)
+
+    new_bar_fig.update_layout(
+       yaxis_title='Frekuensi',
+       xaxis_title='Mesin'
+    )
+
+    percent_bar_fig.update_layout(
+       yaxis_title='Persentase (%)',
+       xaxis_title='Mesin'
+    )
+
+    return new_bar_fig, percent_bar_fig
+
+def new_update_plots(bulan_value):
+    new_bar_fig = new_update_graph(bulan_value)
+    percent_bar_fig = new_update_graph(bulan_value)
+    return new_bar_fig, percent_bar_fig
 
 def parse_contents(contents, filename, date):
     global df   # Declare df as a global variable outside the try block
@@ -305,18 +365,8 @@ def view_file(n_clicks, list_of_contents, list_of_names, list_of_dates):
         children = [
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
-        message = "DataFrame generated successfully!"
+        message = "DataFrame upload successfully!"
         return children, message
-    else:
-        return dash.no_update
-    
-@callback(Output('scatter-plot', 'figure'),
-          Input('plot-button', 'n_clicks'))
-def generate_scatter_plot(n_clicks):
-    global df  # Use the global df variable to create the scatter plot
-    if n_clicks > 0 and not df.empty:
-        fig = px.scatter(df, x='x', y='y', title='Scatter Plot')
-        return fig
     else:
         return dash.no_update
     
@@ -341,6 +391,12 @@ def preprocess_data():
     # Assign the preprocessed data to a new global variable df_preprocessed
     global df_preprocessed
     df_preprocessed = df.copy()
+
+    global mesin_options
+    mesin_options = [{'label': mesin, 'value': mesin} for mesin in df_preprocessed['Mesin'].unique()]
+
+    global values
+    values = df_preprocessed['Mesin'].unique()[0]
 
     return "Data preprocessed successfully!"
 
