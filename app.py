@@ -14,6 +14,7 @@ import dash_bootstrap_components as dbc
 # Add logo and images
 my_logo = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/Pictures/g-dash-high-resolution-logo-white-on-transparent-background.png'
 my_logo_image = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/Pictures/g-dash-high-resolution-logo-color-on-transparent-background.png'
+bg_img = 'https://raw.githubusercontent.com/nwidyant9/G-Dash/main/Pictures/%E2%80%94Pngtree%E2%80%94abstract%20big%20data%20visualization%20digital_1250293.jpg'
 
 # Load Data
 data_mme1_2023 = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/dummy.csv'
@@ -159,13 +160,6 @@ home_layout = dbc.Container(
             )
         ),
     ],
-    style={
-        'background-image': 'url("/path/to/background-image.jpg")',
-        'background-size': 'cover',
-        'background-repeat': 'no-repeat',
-        'background-position': 'center',
-        'padding': '50px',
-    }
 )
 
 # Define dashboard layout
@@ -193,6 +187,7 @@ dashboard_layout = dbc.Container(
         dbc.Button('View File', id='view-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
         dbc.Button('Preprocessing', id='preprocess-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
         dbc.Button('Visualize', id='visualize-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
+        dbc.Button('Clear', id='clear-button', n_clicks=0, color='secondary', style={'margin-top': '20px', 'margin-right': '5px'}),
         #html.H3("Uploaded Data"),
         html.Div(id='output-data-upload'),
         html.Div(id='upload-message', style={'margin': '10px'}),
