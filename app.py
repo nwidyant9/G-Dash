@@ -136,16 +136,36 @@ home_layout = dbc.Container(
         ),
         dbc.Row(
             dbc.Col(
-                html.P("Get started by uploading your CSV files and exploring the dashboard."),
+                html.P(
+                    "Selamat datang di 'G-Dash' - Solusi visualisasi data canggih yang memudahkan Anda untuk menerjemahkan angka menjadi wawasan yang menarik. Dengan slogannya 'Visualize your data', aplikasi ini dirancang khusus untuk membantu Anda mengolah data dengan cepat dan mudah. Hanya dengan mengunggah file CSV, Anda dapat dengan instan menyaksikan visualisasi data yang Anda inginkan. Nikmati kemudahan eksplorasi, analisis, dan presentasi data secara interaktif dengan G-Dash, yang akan membantu Anda mengambil keputusan yang lebih cerdas berdasarkan wawasan yang terperinci dan mudah dipahami.",
+                    style={
+                        'font-family': 'Arial, sans-serif',
+                        'font-size': '18px',
+                        'color': '#333',
+                        'text-align': 'justify',
+                        'line-height': '1.5',
+                    }                        
+                ),
             )
         ),
         dbc.Row(
             dbc.Col(
-                dbc.Button("Get Started", id='get-started-button', n_clicks=0, color='primary', className='mt-3'),
-                width='auto'
+                dbc.Button(
+                    "Get Started", id='get-started-button', n_clicks=0, color='primary', className='mt-3',
+                    style={'font-size': '24px', 'border-radius': '30px'}
+                    ),
+                width={"size": 6, "offset": 3},
+                style={'display': 'flex', 'justify-content': 'center', 'align-items': 'center'}
             )
         ),
-    ]
+    ],
+    style={
+        'background-image': 'url("/path/to/background-image.jpg")',
+        'background-size': 'cover',
+        'background-repeat': 'no-repeat',
+        'background-position': 'center',
+        'padding': '50px',
+    }
 )
 
 # Define dashboard layout
