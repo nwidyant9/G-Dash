@@ -50,6 +50,76 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callb
 # Make option for dropdown
 machine_options = [{'label': mesin, 'value': mesin} for mesin in mme1_2023['Mesin'].unique()]
 
+def create_vis_layout(df_preprocessed):
+    vis_layout = dbc.Container(
+        [
+            html.H3(children='Visualized Data', className='mt-3 mb-4'),
+
+            dbc.Row([
+                dbc.Col(
+                    dcc.Dropdown(
+                        id='machines-dropdown',
+                        options=[{'label': mesin, 'value': mesin} for mesin in df_preprocessed['Mesin'].unique()],
+                        value=df_preprocessed['Mesin'].unique()[0],
+                        className='mb-3'
+                    ),
+                    width=3
+                ),
+            ]),
+
+            dbc.Row([
+                dbc.Col(
+                    dcc.Graph(id='line'),
+                    width=6,
+                ),
+                dbc.Col(
+                    dcc.Graph(id='bar'),
+                    width=6,
+                )
+            ], className="mb-5"),
+
+            dbc.Row([
+                dbc.Col(
+                    dcc.Graph(id='pie'),
+                    width=6,
+                ),
+                dbc.Col(
+                    dcc.Graph(id='freq-bar'),
+                    width=6,
+                )
+            ], className="mb-5"),
+
+            dbc.Row([
+                dbc.Col(
+                    dcc.Dropdown(
+                        id='months-dropdown',
+                        options=[{'label': bulan, 'value': bulan} for bulan in df_preprocessed['Bulan'].unique()],
+                        value=df_preprocessed['Bulan'].unique()[0],
+                        className='mb-3'
+                    ),
+                    width=3
+                )
+            ]),
+
+            dbc.Row([
+                dbc.Col(
+                    dcc.Graph(id='new-bar'),
+                    width=6,
+                ),
+                dbc.Col(
+                    dcc.Graph(id='percent-bar'),
+                    width=6,
+                ),
+            ], className="mb-5")
+
+        ], style={
+            'margin-top': '100px',
+            'position': 'static',
+        },
+    )
+
+    return vis_layout
+
 # Define home_layout
 home_layout = dbc.Container(
     [
@@ -103,12 +173,13 @@ dashboard_layout = dbc.Container(
         dbc.Button('View File', id='view-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
         dbc.Button('Preprocessing', id='preprocess-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
         dbc.Button('Visualize', id='visualize-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
-        html.H3("Uploaded Data"),
+        #html.H3("Uploaded Data"),
         html.Div(id='output-data-upload'),
         html.Div(id='upload-message', style={'margin': '10px'}),
-        html.H3("Preprocessed Data"),
+        #html.H3("Preprocessed Data"),
         dash_table.DataTable(id='preprocessed-table', columns=[], data=[], page_size=10),
-        html.H3("Visualized Data"),
+        #html.H3("Visualized Data"),
+        html.Div(id='visualize-content')
     ]
 )
 
@@ -435,6 +506,103 @@ def preprocess_callback(n_clicks):
             return columns, data
     else:
         return [], []
+    
+@app.callback(
+    Output('visualize-content', 'children'),
+    Input('visualize-button', 'n_clicks')
+)
+def navigate_to_dashboard(n_clicks):
+    if n_clicks is not None and n_clicks > 0:
+        return create_vis_layout(df_preprocessed)
+    return dash.no_update
+
+@app.callback(
+    Output('line', 'figure'),
+    Output('bar', 'figure'),
+    Output('pie', 'figure'),
+    Output('freq-bar', 'figure'),
+    Input('machines-dropdown', 'value'),
+)
+def updates_graph(machines_value):
+    dm = df_preprocessed[df_preprocessed.Mesin == machines_value]
+
+    status_counts = dm['Status'].value_counts()
+    status_percentages = (status_counts / status_counts.sum()) * 100
+
+    lines_fig = px.line(dm, x='Bulan', y=['BD_percent', 'Target_percent'], markers=True, title='Perbandingan Persentase Break Down dan Target')
+    lines_fig.update_layout()
+
+    bars_fig = px.bar(dm, x='Bulan', y='Freq', title='Frequensi Break Down per Bulan')
+    bars_fig.add_trace(go.Scatter(x=dm['Bulan'], y=dm   ['Freq'], mode='lines+markers', name='Freq'))
+
+    color_map = {'OK': 'blue', 'Not OK': 'red'}
+    status_counts = status_counts.sort_index(ascending=False)
+
+    freq_bars_fig = px.bar(status_counts, x=status_counts.index,
+                      y=status_counts.values,
+                      title='Total Frequensi Status Break Down',
+                      color=status_counts.index,
+                      color_discrete_map=color_map
+                     )
+
+    lines_fig.update_layout(
+       yaxis_title='Persentase (%)',
+       xaxis_title='Bulan'
+    )
+
+    freq_bars_fig.update_layout(
+       yaxis_title='Frekuensi',
+       xaxis_title='Status'
+    )
+    
+    lines_fig.update_traces(name='Break Down %', selector=dict(name='BD_percent'))
+    lines_fig.update_traces(name='Target %', selector=dict(name='Target_percent'))
+
+    pies_fig = px.pie(status_percentages,
+                     values=status_percentages,
+                     names=status_percentages.index,
+                     title='Total Persentase Status Break Down',
+                     labels={'label': 'Status'},
+                     hole=.3,
+                     color_discrete_sequence=['blue', 'red'],
+                     category_orders={'Status': ['OK', 'Not OK']}
+                    )
+
+    return lines_fig, bars_fig, pies_fig, freq_bars_fig
+
+def updates_plots(value):
+    lines_fig, bars_fig, freq_bars_fig = updates_graph(value)
+    return lines_fig, bars_fig, freq_bars_fig
+
+@app.callback(
+    Output('new-bar', 'figure'),
+    Output('percent-bar', 'figure'),
+    Input('months-dropdown', 'value')
+)
+def new_updates_graph(months_value):
+    db = df_preprocessed[df_preprocessed.Bulan == months_value]
+
+    new_bars_fig = px.bar(db, x='Mesin', y='Freq', title='Frequensi Break Down setiap Mesin', color='Mesin', text='Freq')
+    new_bars_fig.update_traces(textposition='outside', cliponaxis=False)
+    percent_bars_fig = px.bar(db, x='Mesin', y='BD_percent', title='Persentase Break Down setiap Mesin', color='Mesin', text='BD_percent')
+    percent_bars_fig.update_traces(textposition='outside', cliponaxis=False)
+
+    new_bars_fig.update_layout(
+       yaxis_title='Frekuensi',
+       xaxis_title='Mesin'
+    )
+
+    percent_bars_fig.update_layout(
+       yaxis_title='Persentase (%)',
+       xaxis_title='Mesin'
+    )
+
+    return new_bars_fig, percent_bars_fig
+
+def new_updates_plots(months_value):
+    new_bars_fig = new_updates_graph(months_value)
+    percent_bars_fig = new_updates_graph(months_value)
+    return new_bars_fig, percent_bars_fig
 
 if __name__ == '__main__':
     app.run_server(debug=True)
