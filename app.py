@@ -25,8 +25,12 @@ global df
 global df_preprocessed
 global mesin_options
 global values
-df = pd.DataFrame()  # Initialize an empty DataFrame
+global df_excel
+global df_csv
+df = pd.DataFrame()
 df_preprocessed = pd.DataFrame()
+df_excel = pd.DataFrame()
+df_csv = pd.DataFrame()
 mesin_options = None
 values = None
 
@@ -168,8 +172,8 @@ dashboard_layout = dbc.Container(
         dcc.Upload(
             id='upload-data',
             children=html.Div([
-                'Drag and Drop CSV Files or ',
-                html.A('Select CSV Files', style={'color': 'blue'})
+                'Drag and Drop Files or ',
+                html.A('Select Files', style={'color': 'blue'})
             ]),
             style={
                 'width': '100%',
@@ -187,13 +191,15 @@ dashboard_layout = dbc.Container(
         dbc.Button('View File', id='view-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
         dbc.Button('Preprocessing', id='preprocess-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
         dbc.Button('Visualize', id='visualize-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
+        dbc.Button('Download Excel', id='xlsx-download-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
+        dcc.Download(id='download-excel'),
+        dbc.Button('Download CSV', id='csv-download-button', n_clicks=0, color='primary', style={'margin-top': '20px', 'margin-right': '5px'}),
+        dcc.Download(id='download-csv'),
         dbc.Button('Clear', id='clear-button', n_clicks=0, color='secondary', style={'margin-top': '20px', 'margin-right': '5px'}),
-        #html.H3("Uploaded Data"),
+        html.Div(id='clear-message', style={'margin': '10px'}),
         html.Div(id='output-data-upload'),
         html.Div(id='upload-message', style={'margin': '10px'}),
-        #html.H3("Preprocessed Data"),
         dash_table.DataTable(id='preprocessed-table', columns=[], data=[], page_size=10),
-        #html.H3("Visualized Data"),
         html.Div(id='visualize-content')
     ]
 )
@@ -431,8 +437,8 @@ def parse_contents(contents, filename, date):
             # Assume that the user uploaded a CSV file
             df = pd.read_csv(
                 io.StringIO(decoded.decode('utf-8')))
-        elif 'xls' in filename:
-            # Assume that the user uploaded an excel file
+        elif 'xlsx' in filename:
+            # Assume that the user uploaded an xlsx file
             df = pd.read_excel(io.BytesIO(decoded))
     except Exception as e:
         print(e)
@@ -481,7 +487,7 @@ def preprocess_data():
     global df  # Access the global df variable
 
     if df.empty:
-        return "DataFrame is empty. Upload data first."
+        return 'No DataFrame or DataFrame is empty!'
 
     # Perform data preprocessing (scaling 'x' and 'y' columns to [0, 1])
     df = df.dropna(subset=['Mesin'])
@@ -505,7 +511,7 @@ def preprocess_data():
     global values
     values = df_preprocessed['Mesin'].unique()[0]
 
-    return "Data preprocessed successfully!"
+    return 'Data preprocessed successfully!'
 
 @callback(Output('preprocessed-table', 'columns'),
           Output('preprocessed-table', 'data'),
@@ -618,6 +624,38 @@ def new_updates_plots(months_value):
     new_bars_fig = new_updates_graph(months_value)
     percent_bars_fig = new_updates_graph(months_value)
     return new_bars_fig, percent_bars_fig
+
+@callback(
+    Output("download-excel", "data"),
+    Input("xlsx-download-button", "n_clicks"),
+    prevent_initial_call=True,
+)
+def download_excel(n_clicks):
+    global df_preprocessed
+    return dcc.send_data_frame(df_preprocessed.to_excel, "mydata.xlsx", sheet_name="Sheet_1")
+
+@callback(
+    Output("download-csv", "data"),
+    Input("csv-download-button", "n_clicks"),
+    prevent_initial_call=True,
+)
+def download_csv(n_clicks):
+    global df_preprocessed
+    return dcc.send_data_frame(df_preprocessed.to_csv, "mydata.csv")
+
+@callback(
+    Output('clear-message', 'children'),
+    Input("clear-button", "n_clicks"),
+    prevent_initial_call=True,
+)
+def clear(n_clicks):
+    if n_clicks:
+        global df, df_preprocessed
+        df = None
+        df_preprocessed = None
+        message = 'DataFrame has been cleared. Please Refresh the page!'
+        return df, df_preprocessed, message
+    return dash.no_update
 
 if __name__ == '__main__':
     app.run_server(debug=True)
