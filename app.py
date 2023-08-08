@@ -54,7 +54,8 @@ mme1_2023['Status'] = np.where(mme1_2023['BD_percent'] <= mme1_2023['Target_perc
 Total = mme1_2023['Load_time'].sum()
 
 # Load Linear Regression model
-
+with open('regression_model.pkl', 'rb') as model_file:
+    loaded_model = pickle.load(model_file)
 
 # Define the app
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
