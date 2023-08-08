@@ -3,6 +3,8 @@ from dash import dash_table
 import pandas as pd
 import numpy as np
 import dash
+import pickle
+import requests
 import os
 import io
 import base64
@@ -10,6 +12,7 @@ import datetime
 import plotly.express as px
 import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
+import joblib
 
 # Add logo and images
 my_logo = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/Pictures/g-dash-high-resolution-logo-white-on-transparent-background.png'
@@ -19,6 +22,9 @@ bg_img = 'https://raw.githubusercontent.com/nwidyant9/G-Dash/main/Pictures/%E2%8
 # Load Data
 data_mme1_2023 = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/dummy.csv'
 mme1_2023 = pd.read_csv(data_mme1_2023)
+
+# Linear Regression Model
+model_url = 'https://raw.githubusercontent.com/nwidyant9/G-Dash/blob/main/lr_model.pkl'
 
 # Dummy Global variable
 global df
@@ -47,7 +53,8 @@ mme1_2023['Target_percent'] = round(mme1_2023['Target'] * 100, 2)
 mme1_2023['Status'] = np.where(mme1_2023['BD_percent'] <= mme1_2023['Target_percent'], 'OK', 'Not OK')
 Total = mme1_2023['Load_time'].sum()
 
-# Preprocessing Data MME2
+# Load Linear Regression model
+
 
 # Define the app
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
@@ -275,18 +282,25 @@ mme1_layout = dbc.Container(
 # Display the Linear Regression layout
 linreg_layout = dbc.Container(
     [
-        dbc.Row(
+        dbc.Row([
+            dbc.Col(dcc.Input(id='input-feature1', type='number', placeholder='Load_Time')),
+            dbc.Col(dcc.Input(id='input-feature2', type='number', placeholder='Freq')),
+            dbc.Col(dcc.Input(id='input-feature3', type='number', placeholder='Menit')),
+        ]),
+        dbc.Row([
             dbc.Col(
-                html.H1("Linear Regression", className="mt-3 mb-4"),
-            )
-        ),
-        dbc.Row(
-            dbc.Col(
-                html.P("This is the content of the Linear Regression."),
-            )
-        ),
+                dbc.Button('Predict', id='predict-button', n_clicks=0, color='primary',
+                           style={'margin-top': '20px', 'margin-right': '5px'}),
+            ),
+        ]),
+        dbc.Row([
+            dbc.Col(dcc.Graph(id='prediction-plot')),
+        ]),
     ],
-    className="mt-4"
+    style={
+            'margin-top': '100px',
+            'position': 'static',
+        },
 )
 
 # Define the app layout
@@ -656,6 +670,26 @@ def clear(n_clicks):
         message = 'DataFrame has been cleared. Please Refresh the page!'
         return df, df_preprocessed, message
     return dash.no_update
+
+@app.callback(
+    Output('prediction-plot', 'figure'),
+    [Input('predict-button', 'n_clicks')],
+    [dash.dependencies.State('input-feature1', 'value'),
+     dash.dependencies.State('input-feature2', 'value'),
+     dash.dependencies.State('input-feature3', 'value')]
+)
+def update_plot(n_clicks, feature1, feature2, feature3):
+    if n_clicks is None:
+        return go.Figure()
+
+    new_data_point = [[feature1, feature2, feature3]]
+    prediction = loaded_model.predict(new_data_point)
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=['Predicted'], y=[prediction[0]], name='Predicted Value'))
+    fig.update_layout(title='Prediction Result', yaxis_title='Predicted Value')
+
+    return fig
 
 if __name__ == '__main__':
     app.run_server(debug=True)
