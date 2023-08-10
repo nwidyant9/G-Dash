@@ -15,16 +15,16 @@ import dash_bootstrap_components as dbc
 import joblib
 
 # Add logo and images
-my_logo = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/Pictures/g-dash-high-resolution-logo-white-on-transparent-background.png'
-my_logo_image = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/Pictures/g-dash-high-resolution-logo-color-on-transparent-background.png'
+my_logo = 'https://raw.githubusercontent.com/nwidyant9/G-Dash/main/Pictures/g-dash-high-resolution-logo-white-on-transparent-background.png'
+my_logo_image = 'https://raw.githubusercontent.com/nwidyant9/G-Dash/main/Pictures/g-dash-high-resolution-logo-color-on-transparent-background.png'
 bg_img = 'https://raw.githubusercontent.com/nwidyant9/G-Dash/main/Pictures/%E2%80%94Pngtree%E2%80%94abstract%20big%20data%20visualization%20digital_1250293.jpg'
 
 # Load Data
-data_mme1_2023 = 'https://raw.githubusercontent.com/nwidyant9/Project00/main/dummy.csv'
+data_mme1_2023 = 'https://raw.githubusercontent.com/nwidyant9/G-Dash/main/dummy.csv'
 mme1_2023 = pd.read_csv(data_mme1_2023)
 
 # Linear Regression Model
-model_url = 'https://raw.githubusercontent.com/nwidyant9/G-Dash/blob/main/lr_model.pkl'
+model_url = 'https://raw.githubusercontent.com/nwidyant9/G-Dash/main/linreg_model.pkl'
 
 # Dummy Global variable
 global df
@@ -63,6 +63,7 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callb
 # Make option for dropdown
 machine_options = [{'label': mesin, 'value': mesin} for mesin in mme1_2023['Mesin'].unique()]
 
+# Visualize layout
 def create_vis_layout(df_preprocessed):
     vis_layout = dbc.Container(
         [
@@ -180,8 +181,8 @@ dashboard_layout = dbc.Container(
         dcc.Upload(
             id='upload-data',
             children=html.Div([
-                'Drag and Drop Files or ',
-                html.A('Select Files', style={'color': 'blue'})
+                'Drag and Drop MME 1 Files or ',
+                html.A('Select MME 1 Files', style={'color': 'blue'})
             ]),
             style={
                 'width': '100%',
@@ -293,6 +294,9 @@ linreg_layout = dbc.Container(
                 dbc.Button('Predict', id='predict-button', n_clicks=0, color='primary',
                            style={'margin-top': '20px', 'margin-right': '5px'}),
             ),
+        ]),
+        dbc.Row([
+            html.Div(id='prediction-text'),
         ]),
         dbc.Row([
             dbc.Col(dcc.Graph(id='prediction-plot')),
@@ -674,6 +678,7 @@ def clear(n_clicks):
 
 @app.callback(
     Output('prediction-plot', 'figure'),
+    Output('prediction-text', 'children'),
     [Input('predict-button', 'n_clicks')],
     [dash.dependencies.State('input-feature1', 'value'),
      dash.dependencies.State('input-feature2', 'value'),
@@ -690,7 +695,9 @@ def update_plot(n_clicks, feature1, feature2, feature3):
     fig.add_trace(go.Bar(x=['Predicted'], y=[prediction[0]], name='Predicted Value'))
     fig.update_layout(title='Prediction Result', yaxis_title='Predicted Value')
 
-    return fig
+    prediction_text = f'Predicted Value: {prediction[0]:.4f} or {prediction[0] * 100:.2f}%'
+
+    return fig, prediction_text
 
 if __name__ == '__main__':
     app.run_server(debug=True)
